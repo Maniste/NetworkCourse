@@ -27,10 +27,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 
-	UFUNCTION(Server, Reliable)
-		void Server_PickedUp(AFGPlayer* Player);
-
-	UFUNCTION(NetMulticast, Unreliable)
+	UFUNCTION(NetMulticast, Reliable)
 		void Multicast_PickedUp(AFGPlayer* Player);
 
 	UFUNCTION(Client, Reliable)
@@ -59,6 +56,9 @@ private:
 
 	UFUNCTION()
 		void ReActivatePickup();
+
+	UFUNCTION()
+		void PickUpFunction(AFGPlayer* Player);
 
 	UFUNCTION()
 		void OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

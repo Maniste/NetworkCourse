@@ -54,30 +54,14 @@ void AFGPickup::Tick(float DeltaTime)
 	MeshComponent->AddRelativeRotation(FRotator(0.0f, 20.0f * DeltaTime, 0.0f), false, &Hit, ETeleportType::TeleportPhysics);
 }
 
-
-void AFGPickup::Server_PickedUp_Implementation(AFGPlayer* Player)
+void AFGPickup::Multicast_PickedUp_Implementation(AFGPlayer* Player)
 {
 	Client_PickedUp(Player);
 }
 
-void AFGPickup::Multicast_PickedUp_Implementation(AFGPlayer* Player)
-{
-	Player->OnPickup(this);
-	bPickedUp = true;
-	SphereComponent->SetCollisionProfileName(TEXT("NoCollision"));
-	RootComponent->SetVisibility(false, true);
-	GetWorldTimerManager().SetTimer(ReActivateHandle, this, &AFGPickup::ReActivatePickup, ReActivateTime, false);
-	SetActorTickEnabled(false);
-}
-
 void AFGPickup::Client_PickedUp_Implementation(AFGPlayer* Player)
 {	
-	Player->OnPickup(this);
-	bPickedUp = true;
-	SphereComponent->SetCollisionProfileName(TEXT("NoCollision"));
-	RootComponent->SetVisibility(false, true);
-	GetWorldTimerManager().SetTimer(ReActivateHandle, this, &AFGPickup::ReActivatePickup, ReActivateTime, false);
-	SetActorTickEnabled(false);
+	PickUpFunction(Player);
 }
 
 
@@ -89,16 +73,28 @@ void AFGPickup::ReActivatePickup()
 	SetActorTickEnabled(true);
 }
 
+void AFGPickup::PickUpFunction(AFGPlayer* Player)
+{
+	Player->OnPickup(this);
+	bPickedUp = true;
+	SphereComponent->SetCollisionProfileName(TEXT("NoCollision"));
+	RootComponent->SetVisibility(false, true);
+	GetWorldTimerManager().SetTimer(ReActivateHandle, this, &AFGPickup::ReActivatePickup, ReActivateTime, false);
+	SetActorTickEnabled(false);
+}
+
+
 void AFGPickup::OverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (bPickedUp)
 		return;
 
-		if (AFGPlayer* Player = Cast<AFGPlayer>(OtherActor))
-		{
-			if (Player->HasAuthority())
-				Multicast_PickedUp(Player);
-			else
-				Server_PickedUp(Player);
-		}
+	if (AFGPlayer* Player = Cast<AFGPlayer>(OtherActor))
+	{
+		if (Player->IsLocallyControlled())
+			Multicast_PickedUp(Player);
+		else
+			Client_PickedUp(Player);
+
+	}
 }
